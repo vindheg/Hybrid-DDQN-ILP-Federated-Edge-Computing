@@ -1,0 +1,51 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+env/
+.env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# PyTorch model checkpoints
+*.pth
+saved_models/
+*_models/
+
+# Experiment results (generated at runtime)
+results/
+*_results/
+
+# Dataset (auto-downloaded at runtime)
+data/
+FashionMNIST/
+
+# Zip archives
+*.zip
+
+# Extracted temp directories
+*_extracted/
+
+# Log files
+*.log
+
+# Jupyter
+.ipynb_checkpoints/

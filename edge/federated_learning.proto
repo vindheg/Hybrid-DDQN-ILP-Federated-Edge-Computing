@@ -1,0 +1,273 @@
+syntax = "proto3";
+
+package federated_learning;
+
+// Stress level enum
+enum StressLevel {
+    NO_STRESS = 0;
+    LOW_STRESS = 1;
+    MEDIUM_STRESS = 2;
+    HIGH_STRESS = 3;
+}
+
+// ==================== SERVICE DEFINITIONS ====================
+service CloudCore {
+    // Device registration and coordination
+    rpc RegisterDevice(DeviceInfo) returns (RegistrationResponse);
+    rpc ReadyForRound(ReadyRequest) returns (ReadyResponse);
+    rpc GetAssignment(AssignmentRequest) returns (AssignmentResponse);
+    rpc GetGlobalModel(ModelRequest) returns (ModelResponse);
+    
+    // Edge metrics reporting
+    rpc ReportMetrics(EdgeMetricsReport) returns (MetricsAck);
+    
+    // Device can directly get global model
+    rpc GetModelForDevice(DeviceModelRequest) returns (ModelResponse);
+}
+
+service EdgeNode {
+    // Metrics and status
+    rpc GetMetrics(MetricsRequest) returns (MetricsResponse);
+    rpc ApplyStress(StressRequest) returns (StressResponse);
+    
+    // Device data handling
+    rpc ReceiveData(DataPayload) returns (DataResponse);
+    rpc GetDeviceInfo(DeviceInfoRequest) returns (DeviceInfoResponse);
+    
+    // Training management
+    rpc StartTraining(TrainingRequest) returns (TrainingResponse);
+    rpc GetTrainingResults(ResultsRequest) returns (ResultsResponse);
+    rpc GetTrainingLogs(LogsRequest) returns (LogsResponse);
+    
+    // Model fetching from cloud
+    rpc FetchGlobalModel(EdgeModelRequest) returns (ModelResponse);
+}
+
+// ==================== MESSAGE DEFINITIONS ====================
+
+// ========== DEVICE-RELATED MESSAGES ==========
+message DeviceInfo {
+    int32 device_id = 1;
+    string ip_address = 2;
+    int32 port = 3;
+    int32 data_samples = 4;
+}
+
+message DeviceInfoRequest {
+    int32 device_id = 1;
+}
+
+message DeviceInfoResponse {
+    string ip_address = 1;
+    int32 port = 2;
+    bool online = 3;
+}
+
+message DeviceModelRequest {
+    int32 device_id = 1;
+    int32 round = 2;
+}
+
+// ========== REGISTRATION & COORDINATION ==========
+message RegistrationResponse {
+    bool success = 1;
+    string message = 2;
+    int32 assigned_id = 3;
+}
+
+message ReadyRequest {
+    int32 device_id = 1;
+    int32 round = 2;
+}
+
+message ReadyResponse {
+    bool acknowledged = 1;
+    bool wait = 2;
+    int32 devices_ready = 3;
+    int32 total_devices = 4;
+}
+
+message AssignmentRequest {
+    int32 device_id = 1;
+    int32 round = 2;
+}
+
+message AssignmentResponse {
+    string edge_ip = 1;
+    int32 edge_port = 2;
+    int32 edge_id = 3;
+    int32 round = 4;
+    string status = 5;  // "assigned", "waiting", "error"
+}
+
+// ========== MODEL MANAGEMENT ==========
+message ModelRequest {
+    int32 edge_id = 1;      // For edge requesting model
+    int32 device_id = 2;    // For device requesting model
+    int32 round = 3;
+}
+
+message EdgeModelRequest {
+    int32 edge_id = 1;
+    int32 round = 2;
+}
+
+message ModelResponse {
+    bytes model_weights = 1;
+    int32 round = 2;
+    bool success = 3;
+    string message = 4;
+    int32 total_parameters = 5;
+}
+
+// ========== METRICS & MONITORING ==========
+message EdgeMetricsReport {
+    int32 edge_id = 1;
+    float cpu_usage = 2;
+    float memory_usage = 3;
+    float bandwidth = 4;
+    float latency = 5;
+    StressLevel stress_level = 6;
+    int32 active_devices = 7;
+}
+
+message MetricsAck {
+    bool received = 1;
+    int32 edge_id = 2;
+    string timestamp = 3;
+}
+
+message MetricsRequest {
+    bool detailed = 1;  // Whether to include detailed metrics
+}
+
+message MetricsResponse {
+    float cpu_usage = 1;
+    float memory_usage = 2;
+    float bandwidth = 3;
+    float latency = 4;
+    StressLevel stress_level = 5;
+    int32 available_memory_mb = 6;
+    int32 available_storage_mb = 7;
+    int32 active_processes = 8;
+}
+
+// ========== DATA TRANSFER ==========
+message DataPayload {
+    int32 device_id = 1;
+    bytes data = 2;
+    bytes labels = 3;
+    int32 round = 4;
+    string data_type = 5;  // "fashion_mnist", "cifar10", etc.
+    int32 total_samples = 6;
+}
+
+message DataResponse {
+    bool success = 1;
+    int32 samples_received = 2;
+    string message = 3;
+    int32 storage_used_mb = 4;
+}
+
+// ========== TRAINING MANAGEMENT ==========
+message TrainingRequest {
+    int32 round = 1;
+    repeated int32 device_ids = 2;  // Devices participating
+    string model_type = 3;          // "fashion_mnist_cnn"
+}
+
+message TrainingResponse {
+    bool success = 1;
+    string message = 2;
+    int32 estimated_time_seconds = 3;
+    int32 devices_count = 4;
+}
+
+message ResultsRequest {
+    int32 round = 1;
+    bool include_logs = 2;
+}
+
+message ResultsResponse {
+    bytes model_weights = 1;
+    float accuracy = 2;
+    float loss = 3;
+    int32 training_time = 4;
+    int32 samples_trained = 5;
+    int32 round = 6;
+    string status = 7;  // "completed", "in_progress", "failed"
+    repeated string device_ids = 8;
+}
+
+// ========== STRESS MANAGEMENT ==========
+message StressRequest {
+    StressLevel level = 1;
+    int32 duration_seconds = 2;
+    int32 edge_id = 3;  // Optional: specify which edge
+}
+
+message StressResponse {
+    bool applied = 1;
+    string message = 2;
+    int32 duration_seconds = 3;
+    StressLevel level = 4;
+    string command_used = 5;
+}
+
+// ========== TRAINING LOGS ==========
+message TrainingLog {
+    int32 epoch = 1;
+    int32 batch = 2;
+    float loss = 3;
+    float accuracy = 4;
+    string timestamp = 5;
+    string device_id = 6;  // Which device's data was used
+    int32 samples_in_batch = 7;
+}
+
+message LogsRequest {
+    int32 round = 1;
+    int32 max_logs = 2;  // Maximum number of logs to return
+    bool recent_only = 3;  // Only return recent logs
+}
+
+message LogsResponse {
+    repeated TrainingLog logs = 1;
+    int32 total_logs = 2;
+    int32 round = 3;
+    string edge_id = 4;
+}
+
+// ========== ERROR & STATUS MESSAGES ==========
+message ErrorResponse {
+    int32 error_code = 1;
+    string error_message = 2;
+    string component = 3;  // "cloud", "edge", "device"
+    string timestamp = 4;
+}
+
+message StatusUpdate {
+    string component = 1;
+    string status = 2;  // "online", "offline", "training", "idle"
+    int32 round = 3;
+    string message = 4;
+}
+
+// ========== HEARTBEAT & HEALTH CHECK ==========
+message Heartbeat {
+    string component_id = 1;  // "edge_1", "device_2", "cloud"
+    string component_type = 2;
+    string status = 3;
+    float uptime_seconds = 4;
+    int32 round = 5;
+}
+
+message HealthCheckResponse {
+    bool healthy = 1;
+    string message = 2;
+    repeated string issues = 3;
+    string timestamp = 4;
+}
+
+
+
