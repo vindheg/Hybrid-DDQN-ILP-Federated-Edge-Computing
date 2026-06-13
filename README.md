@@ -430,10 +430,6 @@ Total Parameters: ~856,074
 
 ---
 
-## 👥 Team
-
-**Team 21**
-
 ---
 
 ## 📄 License
